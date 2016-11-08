@@ -206,7 +206,7 @@ void loop()
   // please refer to: http://www.w3schools.com/TAGS/tag_doctype.asp
   p += "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\r\n";
   p += "<head>\r\n";
-  p += "<title>RelayRemote Demo By Bernardo Giovanni</title>\r\n";
+  p += "<title>RelayRemote Demo By Giovanni Bernardo</title>\r\n";
   // adapt page for mobile devices
   p += "<meta name=\"viewport\" content=\"width=device-width\">\r\n"; 
   // I defined a CSS for rendering some elements
