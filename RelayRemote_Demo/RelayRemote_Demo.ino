@@ -4,8 +4,7 @@ RelayRemote Demo
 This application runs on an ESP8266-based board
 connected via Wi-Fi in a local network
 You can control status of 4 relay connected on ESP8266 GPIOS 12,13,14 and 16 
-using http request or using the Android App "Relay Remote" on Google Play Store:
-https://play.google.com/store/apps/details?id=appinventor.ai_settorezero.RelayRemote
+using http request or using the Android App "Relay Remote"
 
 The MIT License (MIT)
 
@@ -206,6 +205,7 @@ void loop()
   // Doctype 4.01 Transitional
   // please refer to: http://www.w3schools.com/TAGS/tag_doctype.asp
   p += "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\r\n";
+  p += "<html>\r\n";
   p += "<head>\r\n";
   p += "<title>RelayRemote Demo By Giovanni Bernardo</title>\r\n";
   // adapt page for mobile devices
@@ -228,7 +228,6 @@ void loop()
    }
   p += " -->\r\n";
   p += "</head>\r\n";
-  p += "<html>\r\n";
   p += "<body>\r\n";
   // rows with relay status
   for (int i=0; i<4; i++)
