@@ -1,15 +1,40 @@
 /*
- * ESP8266 + DHT22 + Relay Demo 
- * (c)2017 Giovanni Bernardo
- * http://www.settorezero.com
- * 
- * Install "Adafruit Unified Sensor Library" and "DHT Sensor Library" 
- * 
- * Used DHT22 sensor on GPIO13
- * LED for Network status on GPIO16 
- * RELAY on GPIO4
- * 
- */
+DHT22 and Relay Demo
+
+This application runs on an ESP8266-based board
+connected via Wi-Fi in a local network
+You can read Humidity, Tempearature and Heat Index
+and control a Relay via web button.
+
+INSTALL:
+-Adafruit Unified Sensor Library (by Adafruit)
+-DHT Sensor Library (by Adafruit)
+
+The MIT License (MIT)
+
+Copyright (c) 2017 Giovanni Bernardo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORTOR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+(C)2016 Bernardo Giovanni
+http://www.settorezero.com
+http://www.facebook.com/settorezero
+http://www.twitter.com/settorezero
+
+*/
  
 #include <ESP8266WiFi.h>
 #include "DHT.h"
@@ -29,7 +54,7 @@ DHT dht(DHTPIN, DHTTYPE); // set-up DHT sensor
 WiFiServer server(80);
 
 // data used for static IP configuration
-// comment line 51 if you want to use DHCP
+// comment line 76 if you want to use DHCP
 IPAddress ip(192,168,0,105);
 IPAddress gateway(192,168,0,1);
 IPAddress subnet(255,255,255,0);
