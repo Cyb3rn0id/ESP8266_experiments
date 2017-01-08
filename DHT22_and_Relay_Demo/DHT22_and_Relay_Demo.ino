@@ -29,7 +29,7 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORTOR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-(C)2016 Bernardo Giovanni
+(C)2017 Bernardo Giovanni
 http://www.settorezero.com
 http://www.facebook.com/settorezero
 http://www.twitter.com/settorezero
