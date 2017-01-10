@@ -248,9 +248,9 @@ void loop()
     p += "\t\tif(sensorValues[0]!=\"---\"){\n\r";
     p += "\t\t\tdocument.getElementById(\"te\").innerHTML=sensorValues[0];\n\r";
     p += "\t\t\tdocument.getElementById(\"ur\").innerHTML=sensorValues[1];\n\r";
-    p += "\t\t\tdocument.getElementById(\"hi\").innerHTML=sensorValues[2];}\n\r";
+    p += "\t\t\tdocument.getElementById(\"hi\").innerHTML=sensorValues[2];\n\r";
     p += "\t\t\tdocument.getElementById(\"temin\").innerHTML=\"MIN&nbsp;\"+sensorValues[3];\n\r";
-    p += "\t\t\tdocument.getElementById(\"temax\").innerHTML=\"MAX&nbsp;\"+sensorValues[4];\n\r";
+    p += "\t\t\tdocument.getElementById(\"temax\").innerHTML=\"MAX&nbsp;\"+sensorValues[4];}\n\r";
     
     p += "\t\t}\n\r";
     p += "\t}\n\r";
