@@ -56,7 +56,7 @@ DHT dht(DHTPIN, DHTTYPE); // set-up DHT sensor
 WiFiServer server(80);
 
 // data used for static IP configuration
-// comment line 76 if you want to use DHCP
+// comment line 78 if you want to use DHCP
 IPAddress ip(192,168,0,105);
 IPAddress gateway(192,168,0,1);
 IPAddress subnet(255,255,255,0);
