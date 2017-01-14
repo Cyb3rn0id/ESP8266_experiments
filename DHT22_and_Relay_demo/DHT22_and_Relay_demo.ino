@@ -38,31 +38,32 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  
 #include <ESP8266WiFi.h>
 #include "DHT.h"
+#include "webpage.h"
 
 #define LED     16 // D0
 #define RELAY    4 // D2
 #define DHTPIN  13 // D7
 #define DHTTYPE DHT22 // Sensor used: DHT22 (aka AM2302) OR AM2321
+#define USE_STATIC_IP // comment this if you want address assigned by DHCP
 
 // change SSID and passphrase according your network
 const char* ssid = "[YOUR SSID]";
 const char* password = "[YOUR PASSPHRASE]";
+String sdate,stime;
 
-// your webserver path to icons/favicons used for pin application webpage
-// to start page of your smartphone. Don't forget last / in the path
-// read rows from 240 for specifications and for rename your images
-const char* imgpath="[YOUR WEBSERVER PATH/TO/IMAGES/]";
-
-// those data are used for static IP configuration
-// comment line 79 if you want to use DHCP
-IPAddress ip(192,168,0,105);
-IPAddress gateway(192,168,0,1); // router address
-IPAddress subnet(255,255,255,0);
+// data used for static IP configuration
+#ifdef USE_STATIC_IP
+  IPAddress ip(192,168,0,105);
+  IPAddress gateway(192,168,0,1); // router address
+  IPAddress subnet(255,255,255,0);
+#endif
 
 float h,t,hi; // humidity,temperature,heat index
 float h1,t1; // last humidity and temperature good values
 float max_t, min_t; // max and min temperature detected
 String sensorRead; // html string with sensor values separated by comma, used for ajax refresh
+const char* header="HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n";
+const char* doctype="<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\r\n";
 
 DHT dht(DHTPIN, DHTTYPE); // set-up DHT sensor
 WiFiServer server(80);
@@ -82,8 +83,11 @@ void setup()
   Serial.println(ssid);
  
   WiFi.begin(ssid, password);
-  WiFi.config(ip,gateway,subnet); // comment this row if you want to use DHCP
-
+  
+  #ifdef USE_STATIC_IP
+    WiFi.config(ip,gateway,subnet);
+  #endif
+  
   // Connect to WiFi network
   while (WiFi.status() != WL_CONNECTED) 
     {
@@ -157,21 +161,55 @@ void readSensor(bool resetvalues)
     sensorRead += ",";
     sensorRead += String(max_t,1);
     }
+    sensorRead += ",";
+    sensorRead += sdate;
+    sensorRead += ",";
+    sensorRead += stime;
    }
 
+void requestDateTime(void)
+  {
+   WiFiClient client;
+   Serial.println("Requesting date and time");
+  
+   if (!client.connect("193.204.114.232", 13)) // ntp1.inrim.it 
+    {
+    Serial.println("connection failed");
+    return;
+    }
+  client.print("HEAD / HTTP/1.1\r\nAccept: */*\r\nUser-Agent: Mozilla/4.0 (compatible; ESP8266;)\r\n\r\n");
+  delay(10);
+
+  while(!client.available())
+    {
+    delay(1);  
+    }
+  String line = client.readStringUntil('\r');
+  // Example of string: 13 JAN 2017 19:05:58 CET
+  Serial.println(line);
+  sdate=line.substring(0, 11);
+  stime=line.substring(12, 17);
+ }
+    
 void loop() 
   {
   static bool flash=true; // used for blinking the led
     
   static unsigned long prevTime=0;
   // read DHT sensor every 2 seconds
+  if (prevTime>millis()) // prevent millis() overflow
+    {
+    prevTime=0;
+    }
   if ((millis()-2000)>prevTime)
     {
     prevTime=millis();
     flash ^= 1; // blink the led
     digitalWrite(LED,flash);  
     readSensor(false); // read sensor without reset min/max values
+    requestDateTime();
     }
+  
            
   // Check if a client has connected
   WiFiClient client = server.available();
@@ -209,7 +247,7 @@ void loop()
   // javascript has requested sensor values
   if(request.indexOf("getValues") > 0)
     {
-    client.print ("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n");
+    client.print (header);
     client.print(sensorRead);
     Serial.print("Reading: ");
     Serial.println(sensorRead);
@@ -218,120 +256,54 @@ void loop()
   else
     {
     // normal request, write html page
-    
-    // header
-    String p="HTTP/1.1 200 OK\r\n";
-    p += "Content-Type: text/html\r\n";
-    p += "\r\n"; // important!!
-    
-    // Doctype 4.01 Transitional, please refer to: http://www.w3schools.com/TAGS/tag_doctype.asp
-    p += "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\r\n";
-    
-    // html
-    p += "<html>\r\n";
-    p += "<head>\r\n";
-    p += "<title>Ambient Sensor</title>\r\n";
-    p += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\r\n";
-
-    // icon
-    // favicon in base 64 format: Like "normal" favicon works only with desktop pc
-    //p += "<link rel=\"icon\" type=\"image/x-icon\" href=\"data:image/x-icon;base64,AAABAAEAEBAQAAAAAAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA/4QAAP///wAA0P8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEREREREREAEAAAAAAAAQACIiIiIiIgACIiIiIiIiIAIiIiIiIiIgAiIiIiIiIiAAIiIiIiIiAAEAACIiIAAwAREQIiIgMzABERECIgMzMAERERAAMzMwAREREDMzMzABERERAzMzAAEREREQAAAQAAAAAAAAAACAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAA\">\n\r";
-
-    // standard method for favicon
-    // http://www.w3schools.com/tags/att_link_rel.asp
-    p += "<link rel=\"icon\" type=\"image/x-icon\" href=\"" + imgpath + "cloud.ico\">\n\r";
-    
-    // shortcut icon - I think is not standard. Behaviour similar to normal favicon (but you can use png?)
-    // https://www.w3.org/wiki/More_about_the_document_head
-    p += "<link rel=\"shortcut icon\" type=\"image/png\" href=\"" + imgpath + "cloud512.png\">\n\r";
-    
-    // method used by microsoft for windows 8.1/10
-    // https://blogs.msdn.microsoft.com/ie/2012/06/08/high-quality-visuals-for-pinned-sites-in-windows-8/
-    p += "<meta name=\"msapplication-TileImage\" content=\"" + imgpath + "cloud270.png\">\n\r";
-    
-    // method used by apple
-    // https://developer.apple.com/library/content/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
-    p += "<link rel=\"apple-touch-icon\" href=\"" + imgpath + "cloud152.png\">\n\r";
-
-    // stylesheet
-    String g = "<style type=\"text/css\">\r\n";
-    g += ".st {color:#585858; text-decoration:none; font-family:tahoma,arial; font-size:12pt; font-weight:bold; font-variant:small-caps; text-align:center; padding:8px; margin-top:10px; display:block;}\r\n";
-    g += ".bo {color:white; text-decoration:none; font-family:tahoma,arial; font-size:28pt; font-weight:bold; text-align:center; padding:8px; margin-top:1px; margin-bottom:12px; display:block; border-radius:15px; outline:none;}\r\n";
-    g += ".bom {color:white; text-decoration:none; font-family:tahoma,arial; font-size:20pt; font-weight:bold; text-align:center; padding:0px; margin-top:1px; margin-bottom:15px; display:inline-block; border-radius:10px; outline:none;}\r\n";
-    g += ".bu {color:white; background-color:#cccccc; text-decoration:none; font-family:tahoma,arial; font-size:28pt; font-weight:bold; text-align:center; padding:8px; margin-top:1px; margin-bottom:12px; display:block; border-radius:15px; box-shadow:0 8px #666666; outline:none;}\r\n";
-    g += ".bu:active {background-color:#999999; box-shadow:0 3px #333333; transform:translateY(4px);}\r\n";  
-    g += "a.l:hover, a.l:link, a.l:visited {color:#0099cc; text-decoration:none; font-family:tahoma,arial; font-size:12pt; font-weight:normal; text-align:center; padding:8px; margin-top:50px; display:block;}\r\n";
-    g += "</style>\r\n";
-
-    // javascript for ajax functions
-    g += "<script language=\"javascript\">\n\r";
-    g += "xmlhttp=null;\n\r";
-    g += "var sensorValues = [];\n\r";
-    g += "function getValues()\n\r";
-    g += "\t{\n\r";
-    g += "\tsetTimeout('getValues()', 2000);\n\r"; // refresh values every 2 seconds
-    g += "\tif (window.XMLHttpRequest)\n\r";
-    g += "\t\t{\n\r";
-    g += "\t\txmlhttp=new XMLHttpRequest();\n\r";
-    g += "\t\t}\n\r";
-    g += "\telse\n\r";
-    g += "\t\t{\n\r";
-    g += "\t\txmlhttp=new ActiveXObject('Microsoft.XMLHTTP');\n\r";
-    g += "\t\t}\n\r";
-    g += "\txmlhttp.open('GET','?getValues',false);\n\r";
-    g += "\txmlhttp.send(null);\n\r";
-    g += "\tif (xmlhttp.responseText != \"\")\n\r";
-    g += "\t\t{\n\r";
-    g += "\t\tsensorValues = xmlhttp.responseText.split(\",\");\n\r";
-    g += "\t\tif(sensorValues[0]!=\"---\"){\n\r";
-    g += "\t\t\tdocument.getElementById(\"te\").innerHTML=sensorValues[0]+\"&deg;°C\";\n\r";
-    g += "\t\t\tdocument.getElementById(\"ur\").innerHTML=sensorValues[1]+\"%\";\n\r";
-    g += "\t\t\tdocument.getElementById(\"hi\").innerHTML=sensorValues[2]+\"&deg;C\";\n\r";
-    g += "\t\t\tdocument.getElementById(\"temin\").innerHTML=\"&#8681;&nbsp;\"+sensorValues[3]+\"&deg;\";\n\r";
-    g += "\t\t\tdocument.getElementById(\"temax\").innerHTML=\"&#8679;&nbsp;\"+sensorValues[4]+\"&deg;\"; }\n\r";
-    g += "\t\t}\n\r";
-    g += "\t}\n\r";
-    g += "</script>\n\r";
-    g += "</head>\n\r";
-
     // body
-    g += "<body onLoad=\"getValues()\">\n\r"; 
-    g += "<div style=\"text-align:center\">\n\r";
+    String p3= "<body onLoad=\"getValues()\">\n\r"; 
+    p3 += "<div style=\"text-align:center\">\n\r";
     
-    g += "<div class=\"st\">temperatura</div>\n\r";
-    g += "<a id=\"te\" class=\"bo\" style=\"background-color:#ff6600; margin-bottom:8px;\" href=\"?reset\">";
-    g += String(t1,1);
-    g += "&deg;C</a>\n\r";
+    p3 += "<div class=\"st\">temperatura</div>\n\r";
+    p3 += "<a id=\"te\" class=\"bo\" style=\"background-color:#ff6600; margin-bottom:8px;\" href=\"?reset\">";
+    p3 += String(t1,1);
+    p3 += "&deg;C</a>\n\r";
 
     // used unicode arrows for min/max:
     // http://www.w3schools.com/charsets/ref_utf_arrows.asp
-    g += "<div style=\"text-align:center; width:100%\">";
-    g += "<div id=\"temin\" class=\"bom\" style=\"background-color:#ffc300; width:49%;\">&#8681;&nbsp;";
-    g += String(min_t,1);
-    g += "&deg;C</div>\n\r";
-    g += "<div id=\"temax\" class=\"bom\" style=\"background-color:#ff4300; width:49%;\">&#8679;&nbsp;";
-    g += String(max_t,1);
-    g += "&deg;C</div>\n\r";
-    g += "</div>\n\r";
+    p3 += "<div style=\"text-align:center; width:100%\">";
+    // min
+    p3 += "<div id=\"temin\" class=\"bom\" style=\"background-color:#ffc300; width:49%;\">&#8681;&nbsp;";
+    p3 += String(min_t,1);
+    p3 += "&deg;</div>\n\r";
+    // max
+    p3 += "<div id=\"temax\" class=\"bom\" style=\"background-color:#ff4300; width:49%;\">&#8679;&nbsp;";
+    p3 += String(max_t,1);
+    p3 += "&deg;</div>\n\r";
+    p3 += "</div>\n\r";
     
-    g += "<div class=\"st\">umidit&agrave; relativa</div>\n\r";
-    g += "<div id=\"ur\" class=\"bo\" style=\"background-color:#006699\">";
-    g += String(h1,1);
-    g += "%</div>\n\r";
+    // heat index
+    p3 += "<div id=\"hi\" class=\"bo\" style=\"background-color:#009966;\">&#128102;&nbsp;";
+    p3 += String(hi,1);
+    p3 += "&deg;C</div>\n\r";
     
-    g += "<div class=\"st\">temperatura percepita</div>\r\n";
-    g += "<div id=\"hi\" class=\"bo\" style=\"background-color:#009966\">";
-    g += String(hi,1);
-    g += "&deg;C</div>\n\r";
+    p3 += "<div class=\"st\">umidit&agrave; relativa</div>\n\r";
+    p3 += "<div id=\"ur\" class=\"bo\" style=\"background-color:#006699\">";
+    p3 += String(h1,1);
+    p3 += "%</div>\n\r";
+
+    p3 += "<div style=\"text-align:center\">";
+    p3 += "<div class=\"st\" id=\"sdate\" style=\"display:inline-block\";></div>";
+    p3 += "&nbsp;<div class=\"st\" id=\"stime\" style=\"display:inline-block\"></div>\n\r";
+    p3 += "</div>";
     
-    g += "<a class=\"bu\" style=\"margin-top:40px;\" href=\"?relay\">RELAY</a>\n\r";
-    g += "<a class=\"l\" href=\"http://www.settorezero.com\">www.settorezero.com</a>\n\r";
-    g += "</div>\n\r";
-    g += "</body>\n\r";
-    g += "</html>";
-    
-    client.print(p);
-    client.print(g);
+    p3 += "<a class=\"bu\" style=\"margin-top:40px;\" href=\"?relay\">RELAY</a>\n\r";
+    p3 += "<a class=\"l\" href=\"http://www.settorezero.com\">www.settorezero.com</a>\n\r";
+    p3 += "</div>\n\r";
+    p3 += "</body>\n\r";
+    p3 += "</html>";
+
+    client.print(header);
+    client.print(doctype);
+    client.print(p1);
+    client.print(p2);
+    client.print(p3);
     }
   
   Serial.println("Client disconnected");
