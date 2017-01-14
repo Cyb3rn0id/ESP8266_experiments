@@ -4,8 +4,11 @@ Simple and beautiful Wi-Fi weather sensor with indication of:
 - Minimum and Maximum Temperatures
 - Relative Humidity
 - Heat Index
+- Date and Time from a NTP server (inrim.it)
 
 You can control a Relay Too.
+When you pin the webpage to your smartphone start-page, a beautiful icon will appear.
+Upload your icons on a webserver and edit file webpage.h to include your path
 
 Use a NodeMCU devkit and a DHT22 Sensor. Webpage rendering using Javascript/Ajax and CSS3.
 
