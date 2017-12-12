@@ -14,7 +14,8 @@ and make same functions such the original IR remote command.
 You can turn on/off the stove, set the power and water temperature
 You can read the ambient temperature too
 
-PREREQUISITES
+PREREQUISITES 
+(libraries to be installed first)
 - OneWire
 - DallasTemperature
 - IRremoteESP8266
@@ -51,9 +52,11 @@ SOFTWARE.
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define BUZZER 16 // Active Buzzer on D0 (GPIO16) driven by BC337
-#define ONE_WIRE_BUS 5 // DS1820 on D1 (GPIO5)
-IRsend irsend(4); // IR Led on D2 (GPIO4)
+#define BUZZER 16 // Active Buzzer on D0 (GPIO16) driven by BC337 (+ of buzzer on 5V!)
+// 5V on NodeMCU can be found on VU pin (if you're powering it from USB)
+// or on VIN pin (if you're giving 5V on this pin instead of USB)
+#define ONE_WIRE_BUS 5 // DS1820 on D1 (GPIO5) - don't forget a 4K7 pull-up (to 3.3V)
+IRsend irsend(4); // IR Led on D2 (GPIO4) - direct driven without resistor
 OneWire oneWire(ONE_WIRE_BUS); // Setup a oneWire instance
 DallasTemperature Temperature(&oneWire); // Pass our oneWire reference to Dallas Temperature. 
 
@@ -85,6 +88,7 @@ uint16_t T_UP[23] = {6710, 2352,  3422, 1562,  894, 732,  918, 1572,  1746, 758,
 uint16_t T_DN[19] = {6726, 2390,  3394, 1536,  944, 734,  916, 1576,  3394, 1538,  942, 736,  918, 1534,  4246, 1536,  190, 86,  1602};  // UNKNOWN 56631A11
 
 // Extract one decimal from a float value
+/*
 int getDecimal(float val)
  {
  int intPart = int(val);
@@ -92,16 +96,20 @@ int getDecimal(float val)
  int decPart=(val-intPart)*10;
  return decPart;
  }
+*/
 
 // Return HTML page
 String Index_Html(void)
 	{
     float T=0;
-    String stringTemp = ""; 
+    //String stringTemp = ""; 
+	char stringTemp[7];
     Temperature.requestTemperatures();
     T=Temperature.getTempCByIndex(0);
-    stringTemp+=String(int(T))+ "."+String(getDecimal(T));
-	
+    //stringTemp+=String(int(T))+ "."+String(getDecimal(T));
+	// string will be 5 chars long with 1 decimal, /0 included
+	// if shorter than 5 char, initial chars will be spaces
+	dtostrf(T,5,1,stringTemp); //https://blog.protoneer.co.nz/arduino-float-to-string-that-actually-works/
 	return
 	"<!DOCTYPE HTML>"
 	"<html>"
@@ -146,15 +154,18 @@ void setup(void)
   pinMode(BUZZER,OUTPUT);
   digitalWrite(BUZZER,LOW);
   
-  // workaround
+  // workaround to issue 2186
+  // https://github.com/esp8266/Arduino/issues/2186#issuecomment-228581052
   WiFi.persistent(false);
   WiFi.mode(WIFI_OFF);
   WiFi.mode(WIFI_STA);
   
+  // WiFi.config to be used after WiFi.begin
+  // https://github.com/esp8266/Arduino/blob/master/doc/esp8266wifi/station-class.rst
+  WiFi.begin(ssid, password);
   #ifdef USE_STATIC_IP
     WiFi.config(ip,gateway,subnet);
   #endif
-  WiFi.begin(ssid, password);
   
   Serial.println("");
 
