@@ -51,7 +51,7 @@ SOFTWARE.
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define BUZZER 16 // Active Buzzer on D0 (GPIO16) driven by BC237
+#define BUZZER 16 // Active Buzzer on D0 (GPIO16) driven by BC337
 #define ONE_WIRE_BUS 5 // DS1820 on D1 (GPIO5)
 IRsend irsend(4); // IR Led on D2 (GPIO4)
 OneWire oneWire(ONE_WIRE_BUS); // Setup a oneWire instance
