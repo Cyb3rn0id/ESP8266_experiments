@@ -87,30 +87,24 @@ uint16_t T_UP[23] = {6710, 2352,  3422, 1562,  894, 732,  918, 1572,  1746, 758,
 // Temperature Down
 uint16_t T_DN[19] = {6726, 2390,  3394, 1536,  944, 734,  916, 1576,  3394, 1538,  942, 736,  918, 1534,  4246, 1536,  190, 86,  1602};  // UNKNOWN 56631A11
 
-// Extract one decimal from a float value
-/*
-int getDecimal(float val)
+// return Temperature
+String getTemp(void)
  {
- int intPart = int(val);
- // I want only 1 decimal
- int decPart=(val-intPart)*10;
- return decPart;
+ float T=0;
+ char stringTemp[7];
+ Temperature.requestTemperatures();
+ T=Temperature.getTempCByIndex(0);
+ // string will be 5 chars long with 1 decimal, /0 included
+ // if shorter than 5 char, initial chars will be spaces
+ dtostrf(T,5,1,stringTemp); //https://blog.protoneer.co.nz/arduino-float-to-string-that-actually-works/
+ return String(stringTemp)+"&deg;C";
  }
-*/
+
 
 // Return HTML page
 String Index_Html(void)
 	{
-    float T=0;
-    //String stringTemp = ""; 
-	char stringTemp[7];
-    Temperature.requestTemperatures();
-    T=Temperature.getTempCByIndex(0);
-    //stringTemp+=String(int(T))+ "."+String(getDecimal(T));
-	// string will be 5 chars long with 1 decimal, /0 included
-	// if shorter than 5 char, initial chars will be spaces
-	dtostrf(T,5,1,stringTemp); //https://blog.protoneer.co.nz/arduino-float-to-string-that-actually-works/
-	return
+ 	return
 	"<!DOCTYPE HTML>"
 	"<html>"
 	"<head>"
@@ -120,13 +114,29 @@ String Index_Html(void)
 	"body{font-family:arial; font-size:15pt; font-weight:bold;}\n"
 	".bu{font-family:arial; font-weight:bold; font-size:28pt; color:#ffffff; text-align:center; padding:8px; margin:4px; border:0; border-radius:15px; box-shadow:0 8px #666666; outline:none;}\n"
 	".bu:active{box-shadow:0 3px #333333; transform:translateY(4px);}\n"
-	".sm {color:#585858; text-decoration:none; font-family:tahoma,arial; font-size:12pt; font-weight:bold; font-variant:small-caps; text-align:center; padding:8px; margin-top:10px; display:block;}\n"
+	".sm {color:#585858; text-decoration:none; font-family:tahoma,arial; font-size:12pt; font-weight:normal; font-variant:small-caps; text-align:center; padding:8px; margin-top:10px; display:block;}\n"
 	"</style>"
+  "<script language=\"javascript\">\n"
+  "xmlhttp=null;\n"
+  "var sensorValues=[];\n"
+  "function getValues()\n"
+  "{"
+  "setTimeout('getValues()', 2000);\n"
+  "if (window.XMLHttpRequest)\n"
+  "{xmlhttp=new XMLHttpRequest();}\n"
+  "else\n"
+  "{xmlhttp=new ActiveXObject('Microsoft.XMLHTTP');}\n"
+  "xmlhttp.open('GET','/getValues',false);\n"
+  "xmlhttp.send(null);\n"
+  "if (xmlhttp.responseText!=\"\")\n"
+  "{sensorValues = xmlhttp.responseText.split(\",\");\n"
+  "document.getElementById(\"te\").innerHTML=sensorValues[0];}\n"
+  "}</script>"
 	"</head>"
-	"<body>"
+	"<body onLoad=\"getValues()\">"
 	"<div style=\"text-align:center\">"
 	"<span>CONTROLLO STUFA</span><br/><br/>"
-	"<div class=\"bu\" style=\"background-color:#996633; width:93%\">"+stringTemp+"&deg;C</div><br/>"
+	"<div class=\"bu\" id=\"te\" style=\"background-color:#996633; width:93%\">"+getTemp()+"</div><br/>"
 	"<form action=\"/\" method=\"post\">"
 	"<input type=\"submit\" name=\"submit\" value=\"ON/OFF\" class=\"bu\" style=\"background-color:#ff6600; width:98%\"><br/><br/>"
 	"<input type=\"submit\" name=\"submit\" value=\"Pow +\" class=\"bu\" style=\"background-color:#00FF00; width:47%;\">"
@@ -136,7 +146,7 @@ String Index_Html(void)
 	"</form>"
 	"</div>"
 	"<div class=\"sm\">&copy;2017 Giovanni Bernardo</div>"
-	"</body>"
+	"</body onLoad=\"getValues()\">"
 	"</html>";
 	
 	// greater webpages can be sent using following method:
@@ -192,16 +202,22 @@ void setup(void)
     
   // attach functions on server request
   server.on("/", handleRoot);
+  server.on("/getValues",handleAjaxRefresh);
   server.onNotFound(handleNotFound);
   server.begin();
   }
 
- 
+void handleAjaxRefresh()
+  {
+  server.send(200, "text/html", getTemp()+",0");   
+  }
+
+  
 void handleRoot()
   {
   if (server.hasArg("submit"))
     {
-	Serial.println("Form submitted");
+	  Serial.println("Form submitted");
     handleSubmit();
     }
   else 
