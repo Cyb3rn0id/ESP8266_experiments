@@ -15,10 +15,10 @@ You can turn on/off the stove, set the power and water temperature
 You can read the ambient temperature too
 
 PREREQUISITES 
-(libraries to be installed first)
-- OneWire
-- DallasTemperature
-- IRremoteESP8266
+(libraries to be installed first : Menù Sketch -> #include library -> Library management)
+- OneWire => https://www.pjrc.com/teensy/td_libs_OneWire.html
+- DallasTemperature => https://github.com/milesburton/Arduino-Temperature-Control-Library
+- IRremoteESP8266 => https://github.com/markszabo/IRremoteESP8266
 
 MIT License
 
