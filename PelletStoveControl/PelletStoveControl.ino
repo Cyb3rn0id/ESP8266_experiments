@@ -67,11 +67,12 @@ const char* ssid = "[YOUR SSID]";
 const char* password = "[YOUR PASSPHRASE]";
 
 // Page password
-String ps="[YOUR *NUMERIC* PASSWORD FOR PAGE]";
+String ps="0000"; // your *numeric* password for access the page
 
 // Path to Favicons
-// images will be:
+// images will be named as:
 // stove.ico / stove192.png / stove180.png / stove270.png
+// function will only add the trailing part of file name (.ico / 192.png etc)
 String strImgPath="http://[YOUR/PATH/TO/ICONS]/stove";
 
 // Page title
