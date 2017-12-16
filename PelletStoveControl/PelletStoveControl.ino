@@ -66,6 +66,17 @@ DallasTemperature Temperature(&oneWire); // Pass our oneWire reference to Dallas
 const char* ssid = "[YOUR SSID]";
 const char* password = "[YOUR PASSPHRASE]";
 
+// Page password
+String ps="[YOUR *NUMERIC* PASSWORD FOR PAGE]";
+
+// Path to Favicons
+// images will be:
+// stove.ico / stove192.png / stove180.png / stove270.png
+String strImgPath="http://[YOUR/PATH/TO/ICONS]/stove";
+
+// Page title
+String pageTitle="Stove Control";
+
 // data used for static IP configuration
 #ifdef USE_STATIC_IP
   IPAddress subnet(255,255,255,0);
@@ -100,53 +111,74 @@ String getTemp(void)
  return String(stringTemp)+"&deg;C";
  }
 
+// return client IP
+String clientIP(void)
+  {
+  return server.client().remoteIP().toString();  
+  }
 
 // Return HTML page
+// Infos on shortcut icons:
+// General infos:: https://stackoverflow.com/questions/25952907/favicon-ico-vs-link-rel-shortcut-icon
+// General infos: http://bradymower.com/create-ios-android-shortcut-icon-for-website/
+// Standard method: http://www.w3schools.com/tags/att_link_rel.asp
+// (Non standard? Maybe for IE<9) Alternative method: https://www.w3.org/wiki/More_about_the_document_head
+// Microsoft Windows >=8.1 https://blogs.msdn.microsoft.com/ie/2012/06/08/high-quality-visuals-for-pinned-sites-in-windows-8/
+// Apple: https://developer.apple.com/library/content/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
+// Android: I think use the standard method with a PNG image
 String Index_Html(void)
 	{
  	return
 	"<!DOCTYPE HTML>"
 	"<html>"
 	"<head>"
+	"<title>"+pageTitle+"</title>"
 	"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\">"
-	"<title>Stove Control</title>"
+	"<link rel=\"shortcut icon\" href=\""+strImgPath+".ico\">"
+  	"<link rel=\"icon\" type=\"image/png\" sizes=\"192x192\" href=\""+strImgPath+"192.png\">"
+  	"<meta name=\"msapplication-TileImage\" content=\""+strImgPath+"270.png\">"
+  	"<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\""+strImgPath+"180.png\">"
 	"<style type=\"text/css\">"
 	"body{font-family:arial; font-size:15pt; font-weight:bold;}\n"
 	".bu{font-family:arial; font-weight:bold; font-size:28pt; color:#ffffff; text-align:center; padding:8px; margin:4px; border:0; border-radius:15px; box-shadow:0 8px #666666; outline:none;}\n"
 	".bu:active{box-shadow:0 3px #333333; transform:translateY(4px);}\n"
-	".sm {color:#585858; text-decoration:none; font-family:tahoma,arial; font-size:12pt; font-weight:normal; font-variant:small-caps; text-align:center; padding:8px; margin-top:10px; display:block;}\n"
+	".tx{font-family:arial; font-size:26pt; text-align:left; padding:8px; margin:4px; border:2px #c9c9c9 solid; border-radius:15px;}\n"
+  	".sm {color:#585858; text-decoration:none; font-family:tahoma,arial; font-size:12pt; font-weight:normal; font-variant:small-caps; text-align:center; padding:8px; margin-top:10px; display:block;}\n"
 	"</style>"
-  "<script language=\"javascript\">\n"
-  "xmlhttp=null;\n"
-  "var sensorValues=[];\n"
-  "function getValues()\n"
-  "{"
-  "setTimeout('getValues()', 2000);\n"
-  "if (window.XMLHttpRequest)\n"
-  "{xmlhttp=new XMLHttpRequest();}\n"
-  "else\n"
-  "{xmlhttp=new ActiveXObject('Microsoft.XMLHTTP');}\n"
-  "xmlhttp.open('GET','/getValues',false);\n"
-  "xmlhttp.send(null);\n"
-  "if (xmlhttp.responseText!=\"\")\n"
-  "{sensorValues = xmlhttp.responseText.split(\",\");\n"
-  "document.getElementById(\"te\").innerHTML=sensorValues[0];}\n"
-  "}</script>"
+  	"<script language=\"javascript\">\n"
+  	"xmlhttp=null;\n"
+  	"var sensorValues=[];\n"
+  	"function getValues()\n"
+  	"{"
+  	"setTimeout('getValues()', 2000);\n"
+  	"if (window.XMLHttpRequest)\n"
+  	"{xmlhttp=new XMLHttpRequest();}\n"
+  	"else\n"
+  	"{xmlhttp=new ActiveXObject('Microsoft.XMLHTTP');}\n"
+  	"xmlhttp.open('GET','/getValues',false);\n"
+  	"xmlhttp.send(null);\n"
+  	"if (xmlhttp.responseText!=\"\")\n"
+  	"{sensorValues = xmlhttp.responseText.split(\",\");\n"
+  	"document.getElementById(\"te\").innerHTML=sensorValues[0];}\n"
+  	"}</script>"
 	"</head>"
 	"<body onLoad=\"getValues()\">"
 	"<div style=\"text-align:center\">"
-	"<span>CONTROLLO STUFA</span><br/><br/>"
+	"<span>CONTROLLO REMOTO STUFA</span><br/><br/>"
 	"<div class=\"bu\" id=\"te\" style=\"background-color:#996633; width:93%\">"+getTemp()+"</div><br/>"
-	"<form action=\"/\" method=\"post\">"
+	"<div><form action=\"/\" method=\"post\">"
 	"<input type=\"submit\" name=\"submit\" value=\"ON/OFF\" class=\"bu\" style=\"background-color:#ff6600; width:98%\"><br/><br/>"
 	"<input type=\"submit\" name=\"submit\" value=\"Pow +\" class=\"bu\" style=\"background-color:#00FF00; width:47%;\">"
 	"<input type=\"submit\" name=\"submit\" value=\"Temp +\" class=\"bu\" style=\"background-color:#0099FF; width:47%; float:right;\"><br/><br/>"
 	"<input type=\"submit\" name=\"submit\" value=\"Pow -\" class=\"bu\" style=\"background-color:#00CC00; width:47%;\">"
-	"<input type=\"submit\" name=\"submit\" value=\"Temp -\" class=\"bu\" style=\"background-color:#0099AA; width:47%; float:right;\">"
-	"</form>"
+	"<input type=\"submit\" name=\"submit\" value=\"Temp -\" class=\"bu\" style=\"background-color:#0099AA; width:47%; float:right;\"><br/>"
+	"<span class=\"sm\">Password:</span>"
+  	"<input type=\"hidden\" name=\"username\" value=\""+clientIP()+"\">"
+  	"<input type=\"number\" name=\"password\" class=\"tx\" style=\"-webkit-text-security:disc; width:93%;\" pattern=\"[0-9]*\" inputmode=\"numeric\">"
+	"</form></div>"
 	"</div>"
 	"<div class=\"sm\">&copy;2017 Giovanni Bernardo</div>"
-	"</body onLoad=\"getValues()\">"
+ 	"</body onLoad=\"getValues()\">"
 	"</html>";
 	
 	// greater webpages can be sent using following method:
@@ -212,7 +244,6 @@ void handleAjaxRefresh()
   server.send(200, "text/html", getTemp()+",0");   
   }
 
-  
 void handleRoot()
   {
   if (server.hasArg("submit"))
@@ -230,17 +261,19 @@ void returnFail(String msg)
   {
   server.sendHeader("Connection", "close");
   server.sendHeader("Access-Control-Allow-Origin", "*");
-  server.send(500, "text/plain", msg + "\r\n");
+  server.send(500, "text/html", "<h1>"+ msg + "\r\n"+clientIP()+"</h1>");
   }
 
 void handleSubmit()
   {
   if (!server.hasArg("submit")) return returnFail("BAD ARGS");
+  // check password
+  if (server.arg("password")!=ps) return returnFail("BAD PASSWORD");
   String toExec=server.arg("submit");
   Serial.println(toExec+" command requested");
   if (toExec=="ON/OFF")
     {
-	digitalWrite(BUZZER,HIGH);
+	  digitalWrite(BUZZER,HIGH);
     irsend.sendRaw(TOGGLE, 21, 38);
     digitalWrite(BUZZER,LOW);
     server.send(200, "text/html", Index_Html());
@@ -260,9 +293,9 @@ void handleSubmit()
     server.send(200, "text/html", Index_Html());
     }
   else if (toExec=="Temp +")
-	{ 
+	  { 
     digitalWrite(BUZZER,HIGH);
-	irsend.sendRaw(T_UP, 23, 38);
+	  irsend.sendRaw(T_UP, 23, 38);
     digitalWrite(BUZZER,LOW);
     server.send(200, "text/html", Index_Html());
     }
@@ -275,7 +308,7 @@ void handleSubmit()
     }
   else
     {
-	Serial.println("Not a valid command");
+	  Serial.println("Not a valid command");
     returnFail("Bad value");
     }
   }// \HandleSubmit
@@ -289,8 +322,8 @@ void returnOK()
 
 void handleNotFound()
   {
-  String message = "File Not Found\n\n";
-  message += "URI: ";
+  String message = "<h1>File Not Found</h1>\n\n";
+  message += "<h3>URI: ";
   message += server.uri();
   message += "\nMethod: ";
   message += (server.method() == HTTP_GET)?"GET":"POST";
@@ -301,7 +334,7 @@ void handleNotFound()
     {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
     }
-  server.send(404, "text/plain", message);
+  server.send(404, "text/html", message+"</h3>");
   }
 
 void loop(void)
