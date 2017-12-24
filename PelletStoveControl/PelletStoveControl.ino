@@ -18,7 +18,7 @@ PREREQUISITES
 (libraries to be installed first : Menù Sketch -> #include library -> Library management)
 - OneWire => https://www.pjrc.com/teensy/td_libs_OneWire.html
 - DallasTemperature => https://github.com/milesburton/Arduino-Temperature-Control-Library
-- IRremoteESP8266 => https://github.com/markszabo/IRremoteESP8266
+- IRremoteESP8266 => https://github.com/markszabo/IRremoteESP8266 by Markszabo
 
 MIT License
 
@@ -67,16 +67,17 @@ const char* ssid = "[YOUR SSID]";
 const char* password = "[YOUR PASSPHRASE]";
 
 // Page password
-String ps="0000"; // your *numeric* password for access the page
+String ps="1234"; // your *numeric* password for accessing the page
 
 // Path to Favicons
-// images will be named as:
+// images must be named as:
 // stove.ico / stove192.png / stove180.png / stove270.png
-// function will only add the trailing part of file name (.ico / 192.png etc)
-String strImgPath="http://[YOUR/PATH/TO/ICONS]/stove";
+// function "Index_Html" will only add the trailing part of file name (.ico / 192.png etc)
+// example images are included in the repository
+String strImgPath="http://www.PATH/TO/YOUR/IMAGEFOLDER/stove";
 
 // Page title
-String pageTitle="Stove Control";
+String pageTitle="Stove";
 
 // data used for static IP configuration
 #ifdef USE_STATIC_IP
@@ -87,7 +88,14 @@ String pageTitle="Stove Control";
 
 ESP8266WebServer server(80);
 
-// IR remote commands obtained with IRrecvDumpV2.ino for Ungaro Maia 34 Blend pellet stove
+// user for controlling stove running, an inductive sensor
+// is mounted around a cable of the cochlea motor
+unsigned long LastTimeRunning=0;
+bool CochleaRunning=false;
+String MsgStoveOn="STOVE IS <span style=\"color:#33cc00;\">WORKING</span>";  
+String MsgStoveOff="STOVE IS <span style=\"color:#FF3300;\">STOPPED</span>";
+
+// IR remote commands obtained with IRrecvDumpV2.ino for Ungaro Maia 34 Blend pellet stove (Micronova controller board)
 // ON/OFF
 uint16_t TOGGLE[21] = {6680, 2412,  3374, 1560,  920, 732,  918, 1594,  1720, 758,  894, 1584,  896, 732,  920, 1558,  1748, 758,  1722, 1584,  1720};  // UNKNOWN 9EB58962
 // Power Up
@@ -99,7 +107,7 @@ uint16_t T_UP[23] = {6710, 2352,  3422, 1562,  894, 732,  918, 1572,  1746, 758,
 // Temperature Down
 uint16_t T_DN[19] = {6726, 2390,  3394, 1536,  944, 734,  916, 1576,  3394, 1538,  942, 736,  918, 1534,  4246, 1536,  190, 86,  1602};  // UNKNOWN 56631A11
 
-// return Temperature
+// Return Temperature value from DS1820 sensor in string format
 String getTemp(void)
  {
  float T=0;
@@ -136,49 +144,52 @@ String Index_Html(void)
 	"<title>"+pageTitle+"</title>"
 	"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\">"
 	"<link rel=\"shortcut icon\" href=\""+strImgPath+".ico\">"
-  	"<link rel=\"icon\" type=\"image/png\" sizes=\"192x192\" href=\""+strImgPath+"192.png\">"
-  	"<meta name=\"msapplication-TileImage\" content=\""+strImgPath+"270.png\">"
-  	"<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\""+strImgPath+"180.png\">"
+  "<link rel=\"icon\" type=\"image/png\" sizes=\"192x192\" href=\""+strImgPath+"192.png\">"
+  "<meta name=\"msapplication-TileImage\" content=\""+strImgPath+"270.png\">"
+  "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\""+strImgPath+"180.png\">"
 	"<style type=\"text/css\">"
 	"body{font-family:arial; font-size:15pt; font-weight:bold;}\n"
-	".bu{font-family:arial; font-weight:bold; font-size:28pt; color:#ffffff; text-align:center; padding:8px; margin:4px; border:0; border-radius:15px; box-shadow:0 8px #666666; outline:none;}\n"
+	".bu{font-family:arial; font-weight:bold; font-size:27pt; color:#ffffff; text-align:center; padding:7px; margin:3px; border:0; border-radius:15px; box-shadow:0 8px #666666; outline:none;}\n"
 	".bu:active{box-shadow:0 3px #333333; transform:translateY(4px);}\n"
 	".tx{font-family:arial; font-size:26pt; text-align:left; padding:8px; margin:4px; border:2px #c9c9c9 solid; border-radius:15px;}\n"
-  	".sm {color:#585858; text-decoration:none; font-family:tahoma,arial; font-size:12pt; font-weight:normal; font-variant:small-caps; text-align:center; padding:8px; margin-top:10px; display:block;}\n"
+  ".sm {color:#585858; text-decoration:none; font-family:tahoma,arial; font-size:12pt; font-weight:normal; font-variant:small-caps; text-align:center; padding:8px; margin-top:10px; display:block;}\n"
 	"</style>"
-  	"<script language=\"javascript\">\n"
-  	"xmlhttp=null;\n"
-  	"var sensorValues=[];\n"
-  	"function getValues()\n"
-  	"{"
-  	"setTimeout('getValues()', 2000);\n"
-  	"if (window.XMLHttpRequest)\n"
-  	"{xmlhttp=new XMLHttpRequest();}\n"
-  	"else\n"
-  	"{xmlhttp=new ActiveXObject('Microsoft.XMLHTTP');}\n"
-  	"xmlhttp.open('GET','/getValues',false);\n"
-  	"xmlhttp.send(null);\n"
-  	"if (xmlhttp.responseText!=\"\")\n"
-  	"{sensorValues = xmlhttp.responseText.split(\",\");\n"
-  	"document.getElementById(\"te\").innerHTML=sensorValues[0];}\n"
-  	"}</script>"
+  "<script language=\"javascript\">\n"
+  "xmlhttp=null;\n"
+  "var sensorValues=[];\n"
+  "function getValues()\n"
+  "{"
+  "setTimeout('getValues()', 2000);\n"
+  "if (window.XMLHttpRequest)\n"
+  "{xmlhttp=new XMLHttpRequest();}\n"
+  "else\n"
+  "{xmlhttp=new ActiveXObject('Microsoft.XMLHTTP');}\n"
+  "xmlhttp.open('GET','/getValues',false);\n"
+  "xmlhttp.send(null);\n"
+  "if (xmlhttp.responseText!=\"\")\n"
+  "{sensorValues = xmlhttp.responseText.split(\",\");\n"
+  "document.getElementById(\"te\").innerHTML=sensorValues[0];\n"
+  "document.getElementById(\"status\").innerHTML=sensorValues[1];\n"
+  "}\n"
+  "}</script>"
 	"</head>"
 	"<body onLoad=\"getValues()\">"
 	"<div style=\"text-align:center\">"
-	"<span>CONTROLLO REMOTO STUFA</span><br/><br/>"
+	"<div>CONTROLLO REMOTO STUFA</div>"
+  "<div class=\"sm\" id=\"status\" style=\"font-weight:bold\">---</div>"
 	"<div class=\"bu\" id=\"te\" style=\"background-color:#996633; width:93%\">"+getTemp()+"</div><br/>"
-	"<div><form action=\"/\" method=\"post\">"
+  "<div><form action=\"/\" method=\"post\">"
 	"<input type=\"submit\" name=\"submit\" value=\"ON/OFF\" class=\"bu\" style=\"background-color:#ff6600; width:98%\"><br/><br/>"
 	"<input type=\"submit\" name=\"submit\" value=\"Pow +\" class=\"bu\" style=\"background-color:#00FF00; width:47%;\">"
 	"<input type=\"submit\" name=\"submit\" value=\"Temp +\" class=\"bu\" style=\"background-color:#0099FF; width:47%; float:right;\"><br/><br/>"
 	"<input type=\"submit\" name=\"submit\" value=\"Pow -\" class=\"bu\" style=\"background-color:#00CC00; width:47%;\">"
 	"<input type=\"submit\" name=\"submit\" value=\"Temp -\" class=\"bu\" style=\"background-color:#0099AA; width:47%; float:right;\"><br/>"
 	"<span class=\"sm\">Password:</span>"
-  	"<input type=\"hidden\" name=\"username\" value=\""+clientIP()+"\">"
-  	"<input type=\"number\" name=\"password\" class=\"tx\" style=\"-webkit-text-security:disc; width:93%;\" pattern=\"[0-9]*\" inputmode=\"numeric\">"
+  "<input type=\"hidden\" name=\"username\" value=\""+clientIP()+"\">"
+  "<input type=\"number\" name=\"password\" class=\"tx\" style=\"-webkit-text-security:disc; width:93%;\" pattern=\"[0-9]*\" inputmode=\"numeric\">"
 	"</form></div>"
 	"</div>"
-	"<div class=\"sm\">&copy;2017 Giovanni Bernardo</div>"
+  "<div class=\"sm\">&copy;2017 Giovanni Bernardo</div>"
  	"</body onLoad=\"getValues()\">"
 	"</html>";
 	
@@ -191,12 +202,13 @@ String Index_Html(void)
 
 void setup(void)
   {
-  irsend.begin();
-  Serial.begin(115200);
-  Temperature.begin();
   pinMode(BUZZER,OUTPUT);
   digitalWrite(BUZZER,LOW);
   
+  irsend.begin();
+  Temperature.begin();
+  Serial.begin(115200);
+    
   // workaround to issue 2186
   // https://github.com/esp8266/Arduino/issues/2186#issuecomment-228581052
   WiFi.persistent(false);
@@ -238,11 +250,49 @@ void setup(void)
   server.on("/getValues",handleAjaxRefresh);
   server.onNotFound(handleNotFound);
   server.begin();
+  LastTimeRunning=millis();
   }
 
 void handleAjaxRefresh()
   {
-  server.send(200, "text/html", getTemp()+",0");   
+  int r=analogRead(A0);
+  if (r>20) // some voltage detected => cochlea is running 
+    {
+    LastTimeRunning=millis();  
+    CochleaRunning=true;
+    }
+  else // no voltage detected
+    {
+    if (millis()<LastTimeRunning) // millis() rollover occurred
+      {
+      LastTimeRunning=0;  
+      }
+    else
+      {
+      // if more than 10 seconds passed from last detected running
+      if ((millis()-LastTimeRunning)>10000)
+        {
+        // re-check if voltage present
+        if (analogRead(A0)<20) // no voltage present
+          {
+          CochleaRunning=false;
+          }
+        else // voltage present
+          {
+          CochleaRunning=true;
+          LastTimeRunning=millis();  
+          }
+        } 
+      }   
+    }
+  if (CochleaRunning)
+    {
+    server.send(200, "text/html", getTemp()+","+MsgStoveOn+",0");  
+    }
+  else
+    {
+    server.send(200, "text/html", getTemp()+","+MsgStoveOff+",0");   
+    }
   }
 
 void handleRoot()
@@ -263,6 +313,7 @@ void returnFail(String msg)
   server.sendHeader("Connection", "close");
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(500, "text/html", "<h1>"+ msg + "\r\n"+clientIP()+"</h1>");
+  Serial.println("Failed request: "+msg);
   }
 
 void handleSubmit()
@@ -278,6 +329,7 @@ void handleSubmit()
     irsend.sendRaw(TOGGLE, 21, 38);
     digitalWrite(BUZZER,LOW);
     server.send(200, "text/html", Index_Html());
+    Serial.println("Requested ON/OFF");
     }
   else if (toExec=="Pow +")
     { 
@@ -285,6 +337,7 @@ void handleSubmit()
     irsend.sendRaw(P_UP, 19, 38);
     digitalWrite(BUZZER,LOW);
     server.send(200, "text/html", Index_Html());
+    Serial.println("Requested Power Up");
     }
   else if (toExec=="Pow -")
     { 
@@ -292,6 +345,7 @@ void handleSubmit()
     irsend.sendRaw(P_DN, 21, 38);
     digitalWrite(BUZZER,LOW);
     server.send(200, "text/html", Index_Html());
+    Serial.println("Requested Power Down");
     }
   else if (toExec=="Temp +")
 	  { 
@@ -299,6 +353,7 @@ void handleSubmit()
 	  irsend.sendRaw(T_UP, 23, 38);
     digitalWrite(BUZZER,LOW);
     server.send(200, "text/html", Index_Html());
+    Serial.println("Requested Temperature Up");
     }
   else if (toExec=="Temp -")
     { 
@@ -306,6 +361,7 @@ void handleSubmit()
     irsend.sendRaw(T_DN, 19, 38);
     digitalWrite(BUZZER,LOW);
     server.send(200, "text/html", Index_Html());
+    Serial.println("Requested Temperature Down");
     }
   else
     {
@@ -336,6 +392,7 @@ void handleNotFound()
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
     }
   server.send(404, "text/html", message+"</h3>");
+  Serial.println("File not found");
   }
 
 void loop(void)
