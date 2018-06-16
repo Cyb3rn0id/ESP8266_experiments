@@ -15,7 +15,7 @@ const char *password = "password";
 // relay on GPIO2
 // relay will turn on putting GPIO2 to low level
 #define RELAY 2 // relay on GPIO2
-// esp-01 has blue led on GPIO2 too
+// esp-01 has also blue led on GPIO2
 
 
 // html page
@@ -44,7 +44,7 @@ void turnRelay()
   {
   pinMode(RELAY, OUTPUT);
   digitalWrite(RELAY,0);
-  delay(300);
+  delay(300); // relay will turn on for 300ms then will turn off
   pinMode(RELAY, INPUT);
   response();
   }
