@@ -2,7 +2,7 @@
  * ESP-01 as remote relay controller in AP (Access Point) mode
  * Connect to AP "relay", password = "password"
  * Open browser, visit 192.168.4.1
- * Relay Working mode: monostable
+ * Relay Working mode: monostable (after push, relay will turn on for 300ms then will turn off)
  */
 
 #include <ESP8266WiFi.h>
@@ -14,7 +14,8 @@ const char *password = "password";
 
 // relay on GPIO2
 // relay will turn on putting GPIO2 to low level
-#define RELAY 2     // relay on GPIO2
+#define RELAY 2 // relay on GPIO2
+// esp-01 has blue led on GPIO2 too
 
 
 // html page
@@ -25,10 +26,10 @@ const String HtmlHtml = "<html><head>"
     ".bu:active {background-color:#999999; box-shadow:0 3px #333333; transform:translateY(4px);}\r\n"
     "a.l:hover, a.l:link, a.l:visited {color:#0099cc; text-decoration:none; font-family:tahoma,arial; font-size:12pt; font-weight:normal; text-align:center; padding:8px; margin-top:50px; display:block;}\r\n"
     "</style>\r\n"
-    "</head><body bgcolor=\"black\">";
-const String HtmlTitle = "<h1 style=\"text-align:center; color:white;\">RELAY</h1><br/>\n";
+    "</head><body>";
+const String HtmlTitle = "<h1>Relay control</h1><br/>\n";
 const String HtmlButtons = "<a href=\"RELAY\" class=\"bu\">PUSH</a><br/>";
-const String HtmlHtmlClose = "</html>";
+const String HtmlHtmlClose = "</body></html>";
 
 ESP8266WebServer server(80);
 
