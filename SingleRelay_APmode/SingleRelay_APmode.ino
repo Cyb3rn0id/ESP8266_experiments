@@ -2,7 +2,7 @@
  * ESP-01 as remote relay controller in AP (Access Point) mode
  * Connect to AP "relay", password = "password"
  * Open browser, visit 192.168.4.1
- * Relay working mode: flip/flop
+ * Relay working mode: toggle (every push will invert relay state)
  */
 
 #include <ESP8266WiFi.h>
@@ -15,7 +15,7 @@ const char *password = "password";
 // relay on GPIO2
 // relay will turn on putting GPIO2 to low level
 #define RELAY 2     // relay on GPIO2
-// su IO2 c'è anche il led blu dell'ESP01
+// esp-01 has also blue led on GPIO2
 int relayState = 1; // relay off
 
 // html page
