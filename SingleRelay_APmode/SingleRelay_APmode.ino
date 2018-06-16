@@ -2,6 +2,7 @@
  * ESP-01 as remote relay controller in AP (Access Point) mode
  * Connect to AP "relay", password = "password"
  * Open browser, visit 192.168.4.1
+ * Relay working mode: flip/flop
  */
 
 #include <ESP8266WiFi.h>
@@ -25,14 +26,14 @@ const String HtmlHtml = "<html><head>"
     ".bu:active {background-color:#999999; box-shadow:0 3px #333333; transform:translateY(4px);}\r\n"
     "a.l:hover, a.l:link, a.l:visited {color:#0099cc; text-decoration:none; font-family:tahoma,arial; font-size:12pt; font-weight:normal; text-align:center; padding:8px; margin-top:50px; display:block;}\r\n"
     "</style>\r\n"
-    "</head>";
-const String HtmlHtmlClose = "</html>";
+    "</head><body>";
 const String HtmlTitle = "<h1>Relay control</h1><br/>\n";
-const String HtmlRelayStateLow = "<big>Il Relay &egrave; <b>acceso</b></big><br/>\n";
-const String HtmlRelayStateHigh = "<big>Il Relay &egrave; <b>spento</b></big><br/>\n";
+const String HtmlRelayStateLow = "<big>Relay is <b>ON</b></big><br/>\n";
+const String HtmlRelayStateHigh = "<big>Relay is <b>OFF</b></big><br/>\n";
 const String HtmlButtons = 
     "<a href=\"RELAYOn\" class=\"bu\">ON</a><br/>"
     "<a href=\"RELAYOff\" class=\"bu\">OFF</a><br/>";
+const String HtmlHtmlClose = "</body></html>";
 
 ESP8266WebServer server(80);
 
